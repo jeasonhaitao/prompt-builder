@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Builder - 提示词组装器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #4a90e2;
+            --primary-hover: #357abd;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-bg: #f8f9fa;
+            --white: #ffffff;
+            --text-dark: #333333;
+            --text-light: #666666;
+            --border-color: #dee2e6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--light-bg);
+        }
+
+        .navbar {
+            background: var(--white);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: var(--white);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-large {
+            padding: 16px 32px;
+            font-size: 1.1rem;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .main-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            min-height: calc(100vh - 200px);
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step-container {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+
+        .step-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .step-header h1 {
+            font-size: 2rem;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .step-subtitle {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .input-section {
+            margin-bottom: 40px;
+        }
+
+        .prompt-input {
+            width: 100%;
+            padding: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease;
+        }
+
+        .prompt-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .tutorial-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--white);
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+        }
+
+        .tutorial-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .tutorial-card p {
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .tutorial-card ol {
+            padding-left: 20px;
+        }
+
+        .tutorial-card li {
+            margin-bottom: 10px;
+            opacity: 0.95;
+        }
+
+        .examples-section {
+            margin-bottom: 40px;
+        }
+
+        .examples-section h3 {
+            margin-bottom: 20px;
+            color: var(--text-dark);
+            font-size: 1.3rem;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .example-item {
+            background: var(--light-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .example-item:hover {
+            border-color: var(--primary-color);
+            background: var(--white);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .example-icon {
+            font-size: 2rem;
+        }
+
+        .example-text {
+            font-size: 1rem;
+            color: var(--text-dark);
+        }
+
+        .recommendation-section {
+            margin-bottom: 40px;
+        }
+
+        .scene-section,
+        .goals-section {
+            margin-bottom: 30px;
+        }
+
+        .scene-section h3,
+        .goals-section h3 {
+            margin-bottom: 15px;
+            color: var(--text-dark);
+            font-size: 1.2rem;
+        }
+
+        .scene-tag {
+            display: inline-block;
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .scene-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .scene-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .goals-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .goal-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--light-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .goal-checkbox:hover {
+            border-color: var(--primary-color);
+            background: var(--white);
+        }
+
+        .goal-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .goal-checkbox span {
+            font-size: 1rem;
+            color: var(--text-dark);
+        }
+
+        .dimensions-section {
+            margin-bottom: 40px;
+        }
+
+        .dimensions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .dimensions-header h3 {
+            color: var(--text-dark);
+            font-size: 1.2rem;
+        }
+
+        .dimensions-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .more-dimensions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed var(--border-color);
+        }
+
+        .dimension-item {
+            background: var(--light-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .dimension-item:hover {
+            border-color: var(--primary-color);
+            background: var(--white);
+        }
+
+        .dimension-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .dimension-label {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 1rem;
+        }
+
+        .help-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: var(--white);
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .help-btn:hover {
+            background: var(--primary-hover);
+            transform: scale(1.1);
+        }
+
+        .dimension-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .dimension-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .action-section {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .result-section {
+            margin-bottom: 40px;
+        }
+
+        .short-name-section {
+            margin-bottom: 30px;
+        }
+
+        .short-name-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .short-name-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .short-name-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .prompt-output {
+            background: var(--light-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .prompt-output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--white);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .prompt-output-header h3 {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+        }
+
+        .prompt-output-text {
+            width: 100%;
+            min-height: 300px;
+            padding: 20px;
+            border: none;
+            background: var(--light-bg);
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            line-height: 1.8;
+            resize: vertical;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            flex-direction: column;
+            gap: 20px;
+            color: var(--white);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--white);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--text-dark);
+            color: var(--white);
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 3000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1500;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: var(--white);
+            margin: 50px auto;
+            max-width: 900px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease;
+        }
+
+        .modal-small {
+            max-width: 500px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: var(--text-dark);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: var(--danger-color);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            padding: 20px 30px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .library-search {
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .library-content {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .prompt-card {
+            background: var(--light-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .prompt-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .prompt-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .prompt-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .prompt-usage {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            background: var(--white);
+            padding: 5px 12px;
+            border-radius: 15px;
+        }
+
+        .prompt-card-body {
+            margin-bottom: 15px;
+        }
+
+        .prompt-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .prompt-scene {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+
+        .prompt-preview {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .prompt-card-footer {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .empty-state,
+        .error-state,
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            background: var(--white);
+            border-top: 2px solid var(--border-color);
+            color: var(--text-light);
+        }
+
+        .login-info {
+            background: var(--light-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .login-info p {
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+
+        .login-info .note {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 0;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .form-input {
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .form-footer p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .form-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .step-container {
+                padding: 20px;
+            }
+
+            .step-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .step-subtitle {
+                font-size: 1rem;
+            }
+
+            .examples-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dimensions-container {
+                grid-template-columns: 1fr;
+            }
+
+            .action-section {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .modal-content {
+                margin: 20px;
+                max-width: none;
+            }
+
+            .prompt-card-footer {
+                flex-direction: column;
+            }
+
+            .prompt-card-footer .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .main-content {
+                padding: 20px 10px;
+            }
+
+            .step-header h1 {
+                font-size: 1.3rem;
+            }
+
+            .tutorial-card {
+                padding: 20px;
+            }
+
+            .goals-list {
+                flex-direction: column;
+            }
+
+            .goal-checkbox {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span>🔧</span>
+                <span>Prompt Builder</span>
+            </div>
+            <div class="nav-actions">
+                <button id="loginBtn" class="btn btn-secondary btn-sm">
+                    <span>🔐</span>
+                    <span id="loginText">登录</span>
+                </button>
+                <button id="libraryBtn" class="btn btn-secondary btn-sm">
+                    <span>📚</span>
+                    提示词库
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>正在生成...</p>
+        </div>
+
+        <div id="toast" class="toast"></div>
+
+        <div id="step1" class="step active">
+            <div class="step-container">
+                <div class="step-header">
+                    <h1>把模糊需求变成结构化提示词</h1>
+                    <p class="step-subtitle">输入一句话，AI帮你完善细节</p>
+                </div>
+
+                <div class="input-section">
+                    <textarea id="promptInput" class="prompt-input" placeholder="例如：帮我把这段通知写得更正式（500字内）" rows="3"></textarea>
+                    <button id="generateBtn" class="btn btn-primary btn-large">
+                        <span>✨</span>
+                        一键AI懂你
+                    </button>
+                </div>
+
+                <div class="tutorial-card">
+                    <h3>📖 使用教程</h3>
+                    <p>三步完成提示词组装：</p>
+                    <ol>
+                        <li>输入你的原始需求（一句话即可）</li>
+                        <li>系统推荐场景、目标和维度，你只需填写</li>
+                        <li>生成结构化提示词，一键保存到库</li>
+                    </ol>
+                </div>
+
+                <div class="examples-section">
+                    <h3>💡 示例（点击自动填入）</h3>
+                    <div class="examples-grid">
+                        <div class="example-item" data-example="帮我把这段通知写得更正式（500字内）">
+                            <span class="example-icon">📝</span>
+                            <span class="example-text">把通知写得更正式（500字内）</span>
+                        </div>
+                        <div class="example-item" data-example="把会议纪要整理成表格：议题/结论/待办/负责人">
+                            <span class="example-icon">📊</span>
+                            <span class="example-text">会议纪要整理成表格</span>
+                        </div>
+                        <div class="example-item" data-example="给家长写一条亲切的活动通知，别太官方">
+                            <span class="example-icon">👨‍👩‍👧‍👦</span>
+                            <span class="example-text">给家长写亲切的活动通知</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="step2" class="step">
+            <div class="step-container">
+                <div class="step-header">
+                    <button id="backToStep1" class="btn btn-secondary btn-sm">← 返回</button>
+                    <h1>完善提示词维度</h1>
+                    <p class="step-subtitle">填写推荐的维度，让提示词更精准</p>
+                </div>
+
+                <div class="recommendation-section">
+                    <div class="scene-section">
+                        <h3>🎯 推荐场景</h3>
+                        <div id="recommendedScene"></div>
+                    </div>
+
+                    <div class="goals-section">
+                        <h3>🎯 推荐目标（可多选）</h3>
+                        <div id="recommendedGoals" class="goals-list"></div>
+                    </div>
+                </div>
+
+                <div class="dimensions-section">
+                    <div class="dimensions-header">
+                        <h3>📋 维度填写</h3>
+                        <button id="toggleMoreDimensions" class="btn btn-link">
+                            展开更多维度 (0)
+                        </button>
+                    </div>
+                    <div id="dimensionsContainer" class="dimensions-container"></div>
+                    <div id="moreDimensionsContainer" class="dimensions-container more-dimensions" style="display: none;"></div>
+                </div>
+
+                <div class="action-section">
+                    <button id="regenerateBtn" class="btn btn-secondary">重新生成</button>
+                    <button id="generatePromptBtn" class="btn btn-primary btn-large">
+                        <span>✨</span>
+                        生成提示词
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="step3" class="step">
+            <div class="step-container">
+                <div class="step-header">
+                    <button id="backToStep2" class="btn btn-secondary btn-sm">← 返回</button>
+                    <h1>生成成功！</h1>
+                    <p class="step-subtitle">你的结构化提示词已准备好</p>
+                </div>
+
+                <div class="result-section">
+                    <div class="short-name-section">
+                        <label for="shortNameInput">简称（8-12字）</label>
+                        <input type="text" id="shortNameInput" class="short-name-input" placeholder="例如：办公-写通知-公文">
+                    </div>
+
+                    <div class="prompt-output">
+                        <div class="prompt-output-header">
+                            <h3>结构化提示词</h3>
+                            <button id="copyPromptBtn" class="btn btn-secondary btn-sm">
+                                <span>📋</span>
+                                复制
+                            </button>
+                        </div>
+                        <textarea id="generatedPrompt" class="prompt-output-text" readonly></textarea>
+                    </div>
+                </div>
+
+                <div class="action-section">
+                    <button id="savePromptBtn" class="btn btn-primary btn-large">
+                        <span>💾</span>
+                        保存到提示词库
+                    </button>
+                    <button id="exportAllBtn" class="btn btn-secondary">
+                        <span>📤</span>
+                        导出全部
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="libraryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📚 提示词库</h2>
+                <button id="closeLibrary" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="library-search">
+                    <input type="text" id="searchPrompts" class="search-input" placeholder="搜索提示词...">
+                </div>
+                <div id="libraryContent" class="library-content">
+                    <div class="loading-state">加载中...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="exportAllBtnModal" class="btn btn-secondary">导出全部</button>
+                <button id="closeLibraryBtn" class="btn btn-primary">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loginModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>🔐 用户登录</h2>
+                <button id="closeLogin" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="login-info">
+                    <p>登录后可以将提示词保存到云端，实现跨设备同步。</p>
+                    <p class="note">当前版本支持邮箱登录，未来将支持QQ一键登录。</p>
+                </div>
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="email">邮箱地址</label>
+                        <input type="email" id="email" class="form-input" placeholder="请输入邮箱地址" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" id="password" class="form-input" placeholder="请输入密码" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-block">登录</button>
+                    </div>
+                    <div class="form-footer">
+                        <p>还没有账号？<a href="#" id="registerLink">立即注册</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>📝 用户注册</h2>
+                <button id="closeRegister" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="login-info">
+                    <p>注册后可以将提示词保存到云端，实现跨设备同步。</p>
+                    <p class="note">注册即表示同意我们的服务条款和隐私政策。</p>
+                </div>
+                <form id="registerForm" class="login-form">
+                    <div class="form-group">
+                        <label for="regName">用户名</label>
+                        <input type="text" id="regName" class="form-input" placeholder="请输入用户名" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">邮箱地址</label>
+                        <input type="email" id="regEmail" class="form-input" placeholder="请输入邮箱地址" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">密码</label>
+                        <input type="password" id="regPassword" class="form-input" placeholder="请输入密码（至少6位）" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="regConfirmPassword">确认密码</label>
+                        <input type="password" id="regConfirmPassword" class="form-input" placeholder="请再次输入密码" required minlength="6">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-block">注册</button>
+                    </div>
+                    <div class="form-footer">
+                        <p>已有账号？<a href="#" id="loginLink">立即登录</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>Prompt Builder © 2025 | 让AI更懂你的需求</p>
+    </footer>
+
+    <script>
+        const DIMENSIONS = {
+            task: { name: '任务/目标', description: '你要AI做什么', benefit: '避免跑题', example: '写一份…', placeholder: '例如：写一份工作总结报告' },
+            deliverable: { name: '交付物', description: '输出长什么样', benefit: '结果可直接用', example: '表格/邮件/方案', placeholder: '例如：Word文档，包含标题和正文' },
+            role: { name: '角色', description: '让AI扮演谁', benefit: '更专业', example: '行政写作顾问', placeholder: '例如：资深行政写作专家' },
+            scene: { name: '场景/背景', description: '发生在什么情境', benefit: '更贴合真实', example: '乡镇通知', placeholder: '例如：乡镇政府工作场景' },
+            input: { name: '输入材料', description: '你给它什么', benefit: '减少瞎编', example: '这段会议纪要', placeholder: '例如：会议纪要文本、数据表格等' },
+            scope: { name: '范围边界', description: '做什么/不做什么', benefit: '更可控', example: '不涉及法律结论', placeholder: '例如：仅涉及日常工作，不涉及法律问题' },
+            format: { name: '输出格式', description: '结构/字段', benefit: '更易复制', example: '1-2-3条目', placeholder: '例如：分点列出，每点不超过100字' },
+            constraints: { name: '约束条件', description: '字数/时间/口吻', benefit: '符合要求', example: '500字内', placeholder: '例如：500字以内，正式公文风格' },
+            audience: { name: '受众', description: '给谁看', benefit: '更合适', example: '领导/村民/家长', placeholder: '例如：乡镇领导、村干部' },
+            style: { name: '风格语气', description: '正式/亲切', benefit: '更像人写', example: '通俗但不口水', placeholder: '例如：正式但不生硬，亲切但不随意' },
+            steps: { name: '过程步骤', description: '要不要分步', benefit: '可执行', example: '先列提纲再成稿', placeholder: '例如：先列出提纲，再逐步展开' },
+            quality: { name: '质量标准', description: '怎么算好', benefit: '可验收', example: '必须含3条建议', placeholder: '例如：必须包含至少3条具体建议' },
+            interaction: { name: '交互后续', description: '需不需要追问', benefit: '减少返工', example: '缺信息先问我3个问题', placeholder: '例如：如果信息不足，请先询问3个问题' },
+            environment: { name: '工具环境', description: '在哪用', benefit: '更落地', example: '适配WPS/Word', placeholder: '例如：适配WPS文档格式' }
+        };
+
+        const SCENES = {
+            office: { name: '办公行政', keywords: ['通知', '报告', '总结', '方案', '公文', '会议', '工作'], goals: ['撰写公文', '整理会议纪要', '制定工作方案', '撰写工作总结'] },
+            marketing: { name: '营销推广', keywords: ['宣传', '推广', '广告', '文案', '活动', '营销'], goals: ['撰写宣传文案', '设计活动方案', '撰写产品介绍', '撰写推广文案'] },
+            education: { name: '教育培训', keywords: ['教学', '培训', '课程', '学习', '教育', '讲解'], goals: ['编写教学大纲', '设计培训课程', '撰写教学材料', '解答学习问题'] },
+            agriculture: { name: '农业生产', keywords: ['种植', '农业', '养殖', '农产品', '农技', '芒果'], goals: ['提供种植建议', '解答农业问题', '撰写农技指导', '分析农产品市场'] },
+            daily: { name: '日常生活', keywords: ['生活', '日常', '家庭', '个人', '社交'], goals: ['撰写日常文案', '提供生活建议', '处理日常事务', '撰写社交文案'] },
+            technical: { name: '技术文档', keywords: ['技术', '文档', '代码', '开发', '系统', '软件'], goals: ['编写技术文档', '撰写代码注释', '设计系统方案', '编写API文档'] }
+        };
+
+        const DEFAULT_DIMENSIONS = ['task', 'deliverable', 'role', 'scene', 'input', 'format'];
+
+        let currentStep = 1;
+        let currentPromptData = {};
+        let selectedGoals = [];
+        let prompts = [];
+        let currentUser = null;
+
+        function getRecommendedScene(input) {
+            const lowerInput = input.toLowerCase();
+            for (const [key, scene] of Object.entries(SCENES)) {
+                for (const keyword of scene.keywords) {
+                    if (lowerInput.includes(keyword.toLowerCase())) {
+                        return { key, ...scene };
+                    }
+                }
+            }
+            return { key: 'office', ...SCENES.office };
+        }
+
+        function getRecommendedGoals(sceneKey) {
+            const scene = SCENES[sceneKey];
+            return scene ? scene.goals : SCENES.office.goals;
+        }
+
+        function getRecommendedDimensions(input, sceneKey) {
+            const lowerInput = input.toLowerCase();
+            let dimensions = [...DEFAULT_DIMENSIONS];
+
+            if (lowerInput.includes('字') || lowerInput.includes('字数')) {
+                dimensions.push('constraints');
+            }
+            if (lowerInput.includes('领导') || lowerInput.includes('村民') || lowerInput.includes('家长')) {
+                dimensions.push('audience');
+            }
+            if (lowerInput.includes('正式') || lowerInput.includes('亲切') || lowerInput.includes('风格')) {
+                dimensions.push('style');
+            }
+            if (lowerInput.includes('提纲') || lowerInput.includes('步骤')) {
+                dimensions.push('steps');
+            }
+
+            return [...new Set(dimensions)];
+        }
+
+        function generateShortName(scene, task, deliverable) {
+            const sceneName = scene.substring(0, 2);
+            const taskName = task.substring(0, 4);
+            const deliverableName = deliverable.substring(0, 4);
+            
+            let shortName = sceneName + '-' + taskName + '-' + deliverableName;
+            if (shortName.length > 12) {
+                shortName = shortName.substring(0, 12);
+            }
+            
+            return shortName;
+        }
+
+        function generateStructuredPrompt(data) {
+            let prompt = '';
+            
+            if (data.role) {
+                prompt += '【角色设定】\n' + data.role + '\n\n';
+            }
+            
+            if (data.scene) {
+                prompt += '【场景背景】\n' + data.scene + '\n\n';
+            }
+            
+            if (data.task) {
+                prompt += '【任务目标】\n' + data.task + '\n\n';
+            }
+            
+            if (data.input) {
+                prompt += '【输入材料】\n' + data.input + '\n\n';
+            }
+            
+            if (data.deliverable) {
+                prompt += '【交付要求】\n' + data.deliverable + '\n\n';
+            }
+            
+            if (data.scope) {
+                prompt += '【范围边界】\n' + data.scope + '\n\n';
+            }
+            
+            if (data.format) {
+                prompt += '【输出格式】\n' + data.format + '\n\n';
+            }
+            
+            if (data.constraints) {
+                prompt += '【约束条件】\n' + data.constraints + '\n\n';
+            }
+            
+            if (data.audience) {
+                prompt += '【目标受众】\n' + data.audience + '\n\n';
+            }
+            
+            if (data.style) {
+                prompt += '【风格语气】\n' + data.style + '\n\n';
+            }
+            
+            if (data.steps) {
+                prompt += '【执行步骤】\n' + data.steps + '\n\n';
+            }
+            
+            if (data.quality) {
+                prompt += '【质量标准】\n' + data.quality + '\n\n';
+            }
+            
+            if (data.interaction) {
+                prompt += '【交互要求】\n' + data.interaction + '\n\n';
+            }
+            
+            if (data.environment) {
+                prompt += '【使用环境】\n' + data.environment + '\n\n';
+            }
+            
+            prompt += '请按照以上要求完成任务。';
+            
+            return prompt;
+        }
+
+        function showStep(step) {
+            currentStep = step;
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            const stepElement = document.getElementById('step' + step);
+            if (stepElement) {
+                stepElement.classList.add('active');
+                if (step === 1) {
+                    const promptInput = document.getElementById('promptInput');
+                    if (promptInput) promptInput.focus();
+                } else if (step === 2) {
+                    const promptInput = document.getElementById('promptInput');
+                    if (promptInput) promptInput.blur();
+                }
+            }
+        }
+
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = show ? 'flex' : 'none';
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        function handleGenerate() {
+            const input = document.getElementById('promptInput');
+            if (!input) {
+                alert('找不到输入框');
+                return;
+            }
+
+            const inputValue = input.value.trim();
+            if (!inputValue) {
+                alert('请输入提示词内容');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const scene = getRecommendedScene(inputValue);
+                const goals = getRecommendedGoals(scene.key);
+                const recommendedDimensions = getRecommendedDimensions(inputValue, scene.key);
+
+                currentPromptData = {
+                    originalInput: inputValue,
+                    scene: scene.name,
+                    sceneKey: scene.key
+                };
+
+                displayScene(scene);
+                displayGoals(goals);
+                displayDimensions(recommendedDimensions);
+
+                showStep(2);
+            } catch (error) {
+                console.error('Generate error:', error);
+                alert('生成失败，请重试：' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayScene(scene) {
+            const sceneElement = document.getElementById('recommendedScene');
+            if (sceneElement) {
+                sceneElement.innerHTML = `
+                    <div class="scene-tag">${scene.name}</div>
+                    <input type="text" id="sceneInput" value="${scene.name}" class="scene-input" placeholder="修改场景标签">
+                `;
+            }
+        }
+
+        function displayGoals(goals) {
+            const goalsElement = document.getElementById('recommendedGoals');
+            if (goalsElement) {
+                goalsElement.innerHTML = goals.map((goal, index) => `
+                    <label class="goal-checkbox">
+                        <input type="checkbox" value="${goal}" ${index === 0 ? 'checked' : ''}>
+                        <span>${goal}</span>
+                    </label>
+                `).join('');
+
+                selectedGoals = [goals[0]];
+
+                goalsElement.querySelectorAll('input').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            selectedGoals.push(e.target.value);
+                        } else {
+                            selectedGoals = selectedGoals.filter(g => g !== e.target.value);
+                        }
+                    });
+                });
+            }
+        }
+
+        function displayDimensions(dimensions) {
+            const container = document.getElementById('dimensionsContainer');
+            const moreContainer = document.getElementById('moreDimensionsContainer');
+            const allDimensions = Object.keys(DIMENSIONS);
+            const moreDimensions = allDimensions.filter(d => !dimensions.includes(d));
+
+            if (container) {
+                container.innerHTML = dimensions.map(key => createDimensionForm(key, DIMENSIONS[key])).join('');
+            }
+
+            if (moreContainer) {
+                moreContainer.innerHTML = moreDimensions.map(key => createDimensionForm(key, DIMENSIONS[key])).join('');
+            }
+
+            const toggleBtn = document.getElementById('toggleMoreDimensions');
+            if (toggleBtn) {
+                toggleBtn.textContent = '展开更多维度 (' + moreDimensions.length + ')';
+            }
+        }
+
+        function createDimensionForm(key, dimension) {
+            return `
+                <div class="dimension-item" data-key="${key}">
+                    <div class="dimension-header">
+                        <label class="dimension-label">${dimension.name}</label>
+                        <button class="help-btn" onclick="showDimensionHelp('${key}')" title="查看帮助">?</button>
+                    </div>
+                    <input type="text" 
+                           class="dimension-input" 
+                           id="dim_${key}" 
+                           placeholder="${dimension.placeholder}"
+                           onchange="updatePromptData('${key}', this.value)">
+                </div>
+            `;
+        }
+
+        function showDimensionHelp(key) {
+            const dimension = DIMENSIONS[key];
+            if (dimension) {
+                alert(dimension.name + '\n\n' + dimension.description + '\n\n好处：' + dimension.benefit + '\n\n示例：' + dimension.example);
+            }
+        }
+
+        function updatePromptData(key, value) {
+            currentPromptData[key] = value;
+        }
+
+        function toggleMoreDimensions() {
+            const container = document.getElementById('moreDimensionsContainer');
+            const btn = document.getElementById('toggleMoreDimensions');
+            
+            if (container && btn) {
+                if (container.style.display === 'none' || !container.style.display) {
+                    container.style.display = 'block';
+                    btn.textContent = '收起更多维度';
+                } else {
+                    container.style.display = 'none';
+                    btn.textContent = '展开更多维度 (8)';
+                }
+            }
+        }
+
+        function handleGeneratePrompt() {
+            collectDimensionData();
+
+            if (!currentPromptData.task) {
+                alert('请至少填写"任务/目标"维度');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const structuredPrompt = generateStructuredPrompt(currentPromptData);
+                const shortName = generateShortName(
+                    currentPromptData.scene || '',
+                    currentPromptData.task || '',
+                    currentPromptData.deliverable || ''
+                );
+
+                currentPromptData.structuredPrompt = structuredPrompt;
+                currentPromptData.shortName = shortName;
+                currentPromptData.name = shortName;
+                currentPromptData.tags = [currentPromptData.sceneKey || 'default'];
+                currentPromptData.createdAt = new Date().toISOString();
+                currentPromptData.usageCount = 0;
+
+                displayGeneratedPrompt(structuredPrompt, shortName);
+                showStep(3);
+            } catch (error) {
+                console.error('Generate prompt error:', error);
+                alert('生成提示词失败，请重试：' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function collectDimensionData() {
+            const inputs = document.querySelectorAll('.dimension-input');
+            inputs.forEach(input => {
+                const key = input.id.replace('dim_', '');
+                if (input.value.trim()) {
+                    currentPromptData[key] = input.value.trim();
+                }
+            });
+
+            const sceneInput = document.getElementById('sceneInput');
+            if (sceneInput && sceneInput.value.trim()) {
+                currentPromptData.scene = sceneInput.value.trim();
+            }
+
+            if (selectedGoals.length > 0) {
+                currentPromptData.goals = selectedGoals;
+            }
+        }
+
+        function displayGeneratedPrompt(prompt, shortName) {
+            const promptElement = document.getElementById('generatedPrompt');
+            const shortNameInput = document.getElementById('shortNameInput');
+            
+            if (promptElement) {
+                promptElement.value = prompt;
+            }
+            if (shortNameInput) {
+                shortNameInput.value = shortName;
+            }
+        }
+
+        function handleCopyPrompt() {
+            const promptElement = document.getElementById('generatedPrompt');
+            if (!promptElement) {
+                alert('找不到提示词输出区域');
+                return;
+            }
+
+            const prompt = promptElement.value;
+            
+            try {
+                navigator.clipboard.writeText(prompt).then(() => {
+                    showToast('提示词已复制到剪贴板');
+                }).catch(err => {
+                    console.error('Copy failed:', err);
+                    alert('复制失败，请手动复制');
+                });
+            } catch (error) {
+                console.error('Copy error:', error);
+                alert('复制失败，请手动复制');
+            }
+        }
+
+        function handleSavePrompt() {
+            collectDimensionData();
+
+            const shortNameInput = document.getElementById('shortNameInput');
+            if (!shortNameInput) {
+                alert('找不到简称输入框');
+                return;
+            }
+
+            const shortName = shortNameInput.value.trim();
+            if (!shortName) {
+                alert('请输入简称');
+                return;
+            }
+
+            currentPromptData.shortName = shortName;
+            currentPromptData.name = shortName;
+
+            try {
+                currentPromptData.id = Date.now();
+                prompts.push(currentPromptData);
+                localStorage.setItem('promptBuilderPrompts', JSON.stringify(prompts));
+                showToast('提示词已保存到库');
+                updateLibraryUI();
+            } catch (error) {
+                console.error('Save error:', error);
+                alert('保存失败，请重试：' + error.message);
+            }
+        }
+
+        function openLibrary() {
+            const modal = document.getElementById('libraryModal');
+            if (modal) {
+                modal.style.display = 'block';
+                updateLibraryUI();
+            }
+        }
+
+        function closeLibrary() {
+            const modal = document.getElementById('libraryModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function updateLibraryUI() {
+            const container = document.getElementById('libraryContent');
+            const searchInput = document.getElementById('searchPrompts');
+            
+            if (!container) {
+                return;
+            }
+
+            const searchValue = searchInput ? searchInput.value.trim() : '';
+
+            try {
+                let filteredPrompts = prompts;
+                if (searchValue) {
+                    const lowerSearch = searchValue.toLowerCase();
+                    filteredPrompts = prompts.filter(p => {
+                        const nameMatch = p.name && p.name.toLowerCase().includes(lowerSearch);
+                        const sceneMatch = p.scene && p.scene.toLowerCase().includes(lowerSearch);
+                        const taskMatch = p.task && p.task.toLowerCase().includes(lowerSearch);
+                        return nameMatch || sceneMatch || taskMatch;
+                    });
+                }
+
+                if (filteredPrompts.length === 0) {
+                    container.innerHTML = '<div class="empty-state">暂无提示词</div>';
+                    return;
+                }
+
+                container.innerHTML = filteredPrompts.map(prompt => createPromptCard(prompt)).join('');
+
+                container.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const promptId = parseInt(e.target.dataset.id);
+                        copyPromptToClipboard(promptId);
+                    });
+                });
+
+                container.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const promptId = parseInt(e.target.dataset.id);
+                        editPrompt(promptId);
+                    });
+                });
+
+                container.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const promptId = parseInt(e.target.dataset.id);
+                        deletePromptFromLibrary(promptId);
+                    });
+                });
+            } catch (error) {
+                console.error('Update library error:', error);
+                container.innerHTML = '<div class="error-state">加载失败：' + error.message + '</div>';
+            }
+        }
+
+        function createPromptCard(prompt) {
+            return `
+                <div class="prompt-card">
+                    <div class="prompt-card-header">
+                        <h3 class="prompt-name">${prompt.name || '未命名'}</h3>
+                        <span class="prompt-usage">使用 ${prompt.usageCount || 0} 次</span>
+                    </div>
+                    <div class="prompt-card-body">
+                        <div class="prompt-info">
+                            <span class="prompt-scene">${prompt.scene || ''}</span>
+                            ${prompt.tags && prompt.tags.length > 0 ? `
+                                <div class="prompt-tags">
+                                    ${prompt.tags.map(tag => `<span class="prompt-scene">${tag}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <p class="prompt-preview">${(prompt.task || '').substring(0, 100)}...</p>
+                    </div>
+                    <div class="prompt-card-footer">
+                        <button class="btn btn-sm copy-btn" data-id="${prompt.id}">复制</button>
+                        <button class="btn btn-sm edit-btn" data-id="${prompt.id}">编辑</button>
+                        <button class="btn btn-sm delete-btn" data-id="${prompt.id}" style="background: var(--danger-color);">删除</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function copyPromptToClipboard(id) {
+            try {
+                const prompt = prompts.find(p => p.id === id);
+                if (prompt && prompt.structuredPrompt) {
+                    navigator.clipboard.writeText(prompt.structuredPrompt).then(() => {
+                        prompt.usageCount = (prompt.usageCount || 0) + 1;
+                        localStorage.setItem('promptBuilderPrompts', JSON.stringify(prompts));
+                        showToast('提示词已复制');
+                        updateLibraryUI();
+                    }).catch(err => {
+                        console.error('Copy failed:', err);
+                        alert('复制失败：' + err.message);
+                    });
+                }
+            } catch (error) {
+                console.error('Copy prompt error:', error);
+                alert('复制失败：' + error.message);
+            }
+        }
+
+        function editPrompt(id) {
+            try {
+                const prompt = prompts.find(p => p.id === id);
+                if (prompt) {
+                    currentPromptData = { ...prompt };
+                    const promptInput = document.getElementById('promptInput');
+                    if (promptInput) {
+                        promptInput.value = prompt.originalInput || '';
+                    }
+                    closeLibrary();
+                    showStep(1);
+                    handleGenerate();
+                }
+            } catch (error) {
+                console.error('Edit prompt error:', error);
+                alert('加载失败：' + error.message);
+            }
+        }
+
+        function deletePromptFromLibrary(id) {
+            if (!confirm('确定要删除这个提示词吗？')) {
+                return;
+            }
+
+            try {
+                prompts = prompts.filter(p => p.id !== id);
+                localStorage.setItem('promptBuilderPrompts', JSON.stringify(prompts));
+                showToast('已删除');
+                updateLibraryUI();
+            } catch (error) {
+                console.error('Delete prompt error:', error);
+                alert('删除失败：' + error.message);
+            }
+        }
+
+        function handleExportAll() {
+            try {
+                if (prompts.length === 0) {
+                    alert('提示词库为空');
+                    return;
+                }
+
+                const format = prompt('选择导出格式:\n1. JSON\n2. CSV\n3. Markdown\n4. Excel\n\n请输入数字(1-4):');
+                
+                switch (format) {
+                    case '1':
+                        exportToJSON();
+                        break;
+                    case '2':
+                        exportToCSV();
+                        break;
+                    case '3':
+                        exportToMarkdown();
+                        break;
+                    case '4':
+                        alert('Excel导出需要xlsx库，当前版本仅支持JSON/CSV/Markdown导出');
+                        break;
+                    default:
+                        alert('无效的选择');
+                }
+            } catch (error) {
+                console.error('Export all error:', error);
+                alert('导出失败：' + error.message);
+            }
+        }
+
+        function exportToJSON() {
+            const dataStr = JSON.stringify(prompts, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'prompts.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportToCSV() {
+            if (!prompts || prompts.length === 0) {
+                alert('没有可导出的数据');
+                return;
+            }
+
+            const headers = ['名称', '简称', '场景', '任务', '交付物', '角色', '标签', '使用次数', '创建时间'];
+            const rows = prompts.map(prompt => [
+                prompt.name || '',
+                prompt.shortName || '',
+                prompt.scene || '',
+                prompt.task || '',
+                prompt.deliverable || '',
+                prompt.role || '',
+                (prompt.tags || []).join('; '),
+                prompt.usageCount || 0,
+                prompt.createdAt || ''
+            ]);
+
+            let csvContent = headers.join(',') + '\n';
+            rows.forEach(row => {
+                const escapedRow = row.map(cell => {
+                    const cellStr = String(cell);
+                    if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                        return '"' + cellStr.replace(/"/g, '""') + '"';
+                    }
+                    return cellStr;
+                });
+                csvContent += escapedRow.join(',') + '\n';
+            });
+
+            const BOM = '\uFEFF';
+            const dataBlob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'prompts.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportToMarkdown() {
+            if (!prompts || prompts.length === 0) {
+                alert('没有可导出的数据');
+                return;
+            }
+
+            let mdContent = '# 提示词库\n\n';
+            mdContent += '导出时间: ' + new Date().toLocaleString() + '\n';
+            mdContent += '总计: ' + prompts.length + ' 个提示词\n\n---\n\n';
+
+            prompts.forEach((prompt, index) => {
+                mdContent += '## ' + (index + 1) + '. ' + (prompt.name || '未命名') + '\n\n';
+                
+                if (prompt.shortName) {
+                    mdContent += '**简称**: ' + prompt.shortName + '\n\n';
+                }
+                
+                if (prompt.scene) {
+                    mdContent += '**场景**: ' + prompt.scene + '\n\n';
+                }
+                
+                if (prompt.tags && prompt.tags.length > 0) {
+                    mdContent += '**标签**: ' + prompt.tags.join(', ') + '\n\n';
+                }
+                
+                mdContent += '**使用次数**: ' + (prompt.usageCount || 0) + '\n\n';
+                mdContent += '**创建时间**: ' + (prompt.createdAt || '') + '\n\n';
+                
+                mdContent += '### 结构化提示词\n\n';
+                mdContent += '```\n';
+                mdContent += prompt.structuredPrompt || '';
+                mdContent += '\n```\n\n';
+                
+                if (prompt.originalInput) {
+                    mdContent += '### 原始输入\n\n';
+                    mdContent += '> ' + prompt.originalInput + '\n\n';
+                }
+                
+                mdContent += '---\n\n';
+            });
+
+            const dataBlob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8;' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'prompts.md';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function handleLoginClick() {
+            if (currentUser) {
+                if (confirm('确定要退出登录吗？')) {
+                    logout();
+                }
+            } else {
+                openLoginModal();
+            }
+        }
+
+        function openLoginModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeLoginModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function handleLoginSubmit(event) {
+            event.preventDefault();
+            
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            
+            if (!emailInput || !passwordInput) {
+                alert('找不到登录表单');
+                return;
+            }
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            
+            if (!email || !password) {
+                alert('请填写完整的登录信息');
+                return;
+            }
+
+            currentUser = {
+                id: Date.now(),
+                email: email,
+                name: email.split('@')[0],
+                token: 'local_' + Date.now(),
+                isLocal: true
+            };
+
+            localStorage.setItem('promptBuilderUser', JSON.stringify(currentUser));
+            updateLoginUI();
+            showToast('登录成功（本地模式）');
+            closeLoginModal();
+        }
+
+        function openRegisterModal() {
+            const modal = document.getElementById('registerModal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeRegisterModal() {
+            const modal = document.getElementById('registerModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function openLoginModalFromRegister() {
+            closeRegisterModal();
+            openLoginModal();
+        }
+
+        function handleRegisterSubmit(event) {
+            event.preventDefault();
+            
+            const nameInput = document.getElementById('regName');
+            const emailInput = document.getElementById('regEmail');
+            const passwordInput = document.getElementById('regPassword');
+            const confirmPasswordInput = document.getElementById('regConfirmPassword');
+            
+            if (!nameInput || !emailInput || !passwordInput || !confirmPasswordInput) {
+                alert('找不到注册表单');
+                return;
+            }
+
+            const name = nameInput.value.trim();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            
+            if (!name || !email || !password || !confirmPassword) {
+                alert('请填写完整的注册信息');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('密码至少需要6位');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alert('两次输入的密码不一致');
+                return;
+            }
+
+            currentUser = {
+                id: Date.now(),
+                email: email,
+                name: name,
+                token: 'local_' + Date.now(),
+                isLocal: true
+            };
+
+            localStorage.setItem('promptBuilderUser', JSON.stringify(currentUser));
+            updateLoginUI();
+            showToast('注册成功（本地模式）');
+            closeRegisterModal();
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('promptBuilderUser');
+            updateLoginUI();
+            showToast('已退出登录');
+        }
+
+        function updateLoginUI() {
+            const loginText = document.getElementById('loginText');
+            const loginBtn = document.getElementById('loginBtn');
+
+            if (currentUser) {
+                if (loginText) {
+                    loginText.textContent = currentUser.email || currentUser.name;
+                }
+                if (loginBtn) {
+                    loginBtn.classList.remove('btn-secondary');
+                    loginBtn.classList.add('btn-success');
+                }
+            } else {
+                if (loginText) {
+                    loginText.textContent = '登录';
+                }
+                if (loginBtn) {
+                    loginBtn.classList.remove('btn-success');
+                    loginBtn.classList.add('btn-secondary');
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedPrompts = localStorage.getItem('promptBuilderPrompts');
+            if (savedPrompts) {
+                try {
+                    prompts = JSON.parse(savedPrompts);
+                } catch (error) {
+                    console.error('Failed to parse prompts:', error);
+                    prompts = [];
+                }
+            }
+
+            const savedUser = localStorage.getItem('promptBuilderUser');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    updateLoginUI();
+                } catch (error) {
+                    console.error('Failed to parse user:', error);
+                }
+            }
+
+            document.getElementById('generateBtn').addEventListener('click', handleGenerate);
+            document.getElementById('backToStep1').addEventListener('click', () => showStep(1));
+            document.getElementById('regenerateBtn').addEventListener('click', handleGenerate);
+            document.getElementById('copyPromptBtn').addEventListener('click', handleCopyPrompt);
+            document.getElementById('savePromptBtn').addEventListener('click', handleSavePrompt);
+            document.getElementById('exportAllBtn').addEventListener('click', handleExportAll);
+            document.getElementById('libraryBtn').addEventListener('click', openLibrary);
+            document.getElementById('closeLibrary').addEventListener('click', closeLibrary);
+            document.getElementById('closeLibraryBtn').addEventListener('click', closeLibrary);
+            document.getElementById('searchPrompts').addEventListener('input', updateLibraryUI);
+            document.getElementById('toggleMoreDimensions').addEventListener('click', toggleMoreDimensions);
+            document.getElementById('loginBtn').addEventListener('click', handleLoginClick);
+            document.getElementById('closeLogin').addEventListener('click', closeLoginModal);
+            document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit);
+            document.getElementById('registerLink').addEventListener('click', openRegisterModal);
+            document.getElementById('closeRegister').addEventListener('click', closeRegisterModal);
+            document.getElementById('registerForm').addEventListener('submit', handleRegisterSubmit);
+            document.getElementById('loginLink').addEventListener('click', openLoginModalFromRegister);
+            document.getElementById('backToStep2').addEventListener('click', () => showStep(2));
+            document.getElementById('generatePromptBtn').addEventListener('click', handleGeneratePrompt);
+
+            const examples = document.querySelectorAll('.example-item');
+            examples.forEach(example => {
+                example.addEventListener('click', () => {
+                    const input = example.dataset.example;
+                    const promptInput = document.getElementById('promptInput');
+                    if (promptInput) {
+                        promptInput.value = input;
+                        handleGenerate();
+                    }
+                });
+            });
+
+            showStep(1);
+        });
+
+        window.onclick = function(event) {
+            const libraryModal = document.getElementById('libraryModal');
+            const loginModal = document.getElementById('loginModal');
+            const registerModal = document.getElementById('registerModal');
+            
+            if (event.target === libraryModal) {
+                closeLibrary();
+            }
+            if (event.target === loginModal) {
+                closeLoginModal();
+            }
+            if (event.target === registerModal) {
+                closeRegisterModal();
+            }
+        };
+    </script>
+</body>
+</html>
